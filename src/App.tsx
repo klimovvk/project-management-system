@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Calendar, User, Users, FolderOpen, ChevronRight, Menu, X, Plus } from 'lucide-react';
 import TaskCard, { TaskData } from './components/TaskCard';
+import MeetingCard, { MeetingData } from './components/MeetingCard';
+import DayView from './components/DayView';
+import WeekView from './components/WeekView';
+import MonthView from './components/MonthView';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('my-work');
@@ -17,6 +21,11 @@ const App = () => {
   const [showTaskCard, setShowTaskCard] = useState(false);
   const [isEditingTask, setIsEditingTask] = useState(false);
   const [tasksData, setTasksData] = useState<Record<string, TaskData>>({});
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingData | null>(null);
+  const [showMeetingCard, setShowMeetingCard] = useState(false);
+  const [isEditingMeeting, setIsEditingMeeting] = useState(false);
+  const [meetingsDetailedData, setMeetingsDetailedData] = useState<Record<string, MeetingData>>({});
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [projectsData, setProjectsData] = useState({
     'project-1': {
       name: 'Проект 1',
@@ -232,6 +241,66 @@ const App = () => {
     setIsEditingTask(true);
   };
 
+  const createMeetingData = (meetingName: string): MeetingData => {
+    const meetingId = `meeting-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return {
+      id: meetingId,
+      name: meetingName,
+      type: 'Рабочее',
+      startDate: new Date().toISOString().split('T')[0],
+      startTime: '14:00',
+      endDate: new Date().toISOString().split('T')[0],
+      endTime: '16:00',
+      duration: '2 часа',
+      timezone: '',
+      calendar: {
+        name: 'Основной календарь',
+        color: '#3B82F6'
+      },
+      repeatType: 'Не повторяется',
+      location: '',
+      participants: ['Кирилл Огородов'],
+      description: '',
+      reminders: ['За 15 минут'],
+      eventColor: '#3B82F6',
+      busyStatus: 'Занят',
+      notifyParticipants: true
+    };
+  };
+
+  const handleMeetingClick = (meetingName: string) => {
+    const existingMeeting = Object.values(meetingsDetailedData).find(meeting => 
+      meeting.name === meetingName
+    );
+    
+    if (existingMeeting) {
+      setSelectedMeeting(existingMeeting);
+    } else {
+      const newMeeting = createMeetingData(meetingName);
+      setMeetingsDetailedData(prev => ({ ...prev, [newMeeting.id]: newMeeting }));
+      setSelectedMeeting(newMeeting);
+    }
+    
+    setShowMeetingCard(true);
+    setIsEditingMeeting(false);
+  };
+
+  const handleMeetingSave = (updatedMeeting: MeetingData) => {
+    setMeetingsDetailedData(prev => ({ ...prev, [updatedMeeting.id]: updatedMeeting }));
+    setSelectedMeeting(updatedMeeting);
+    setIsEditingMeeting(false);
+  };
+
+  const handleMeetingClose = () => {
+    setShowMeetingCard(false);
+    setSelectedMeeting(null);
+    setIsEditingMeeting(false);
+  };
+
+  const handleMeetingEdit = () => {
+    setIsEditingMeeting(true);
+  };
+
   const Sidebar = () => (
     <>
       {sidebarOpen && (
@@ -369,7 +438,11 @@ const App = () => {
               <h3 className="text-lg font-semibold mb-3">Совещания</h3>
               <div className="bg-white rounded-lg shadow border">
                 {meetings.map((meeting, index) => (
-                  <div key={index} className="p-4 border-b border-gray-100 last:border-b-0">
+                  <div 
+                    key={index} 
+                    className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-green-50 cursor-pointer transition-colors"
+                    onClick={() => handleMeetingClick(meeting)}
+                  >
                     <p className="text-gray-800">{meeting}</p>
                   </div>
                 ))}
@@ -388,43 +461,85 @@ const App = () => {
       { id: 'month', name: 'Месяц' }
     ];
 
+    const getAllTasks = (): TaskData[] => {
+      return Object.values(tasksData);
+    };
+
+    const getAllMeetings = (): MeetingData[] => {
+      return Object.values(meetingsDetailedData);
+    };
+
+    const renderCalendarView = () => {
+      const allTasks = getAllTasks();
+      const allMeetings = getAllMeetings();
+
+      switch (currentTab) {
+        case 'day':
+          return (
+            <DayView
+              selectedDate={calendarDate}
+              onDateChange={setCalendarDate}
+              tasks={allTasks}
+              meetings={allMeetings}
+              onTaskClick={(task) => {
+                setSelectedTask(task);
+                setShowTaskCard(true);
+                setIsEditingTask(false);
+              }}
+              onMeetingClick={(meeting) => {
+                setSelectedMeeting(meeting);
+                setShowMeetingCard(true);
+                setIsEditingMeeting(false);
+              }}
+            />
+          );
+        case 'week':
+          return (
+            <WeekView
+              selectedDate={calendarDate}
+              onDateChange={setCalendarDate}
+              tasks={allTasks}
+              meetings={allMeetings}
+              onTaskClick={(task) => {
+                setSelectedTask(task);
+                setShowTaskCard(true);
+                setIsEditingTask(false);
+              }}
+              onMeetingClick={(meeting) => {
+                setSelectedMeeting(meeting);
+                setShowMeetingCard(true);
+                setIsEditingMeeting(false);
+              }}
+            />
+          );
+        case 'month':
+          return (
+            <MonthView
+              selectedDate={calendarDate}
+              onDateChange={setCalendarDate}
+              tasks={allTasks}
+              meetings={allMeetings}
+              onTaskClick={(task) => {
+                setSelectedTask(task);
+                setShowTaskCard(true);
+                setIsEditingTask(false);
+              }}
+              onMeetingClick={(meeting) => {
+                setSelectedMeeting(meeting);
+                setShowMeetingCard(true);
+                setIsEditingMeeting(false);
+              }}
+            />
+          );
+        default:
+          return null;
+      }
+    };
+
     return (
       <div>
         <TabBar tabs={tabs} currentTab={currentTab} onTabChange={setCurrentTab} />
-        
-        <div className="bg-white rounded-lg shadow border p-6">
-          <p className="text-gray-600 mb-4">Просмотр: {tabs.find(tab => tab.id === currentTab)?.name}</p>
-          
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Задачи</h3>
-              <div className="space-y-2">
-                {Object.values(projects).map(project =>
-                  [...Object.values(project.subprojects).flatMap(sub => sub.tasks), ...project.tasks].map((task, index) => (
-                    <div 
-                      key={index} 
-                      className="p-3 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 cursor-pointer transition-colors"
-                      onClick={() => handleTaskClick(task, project.name)}
-                    >
-                      <p className="text-blue-800">{task}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Совещания</h3>
-              <div className="space-y-2">
-                {meetings.map((meeting, index) => (
-                  <div key={index} className="p-3 bg-green-50 border border-green-200 rounded">
-                    <p className="text-green-800">{meeting}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        {renderCalendarView()}
       </div>
     );
   };
@@ -438,7 +553,11 @@ const App = () => {
         
         <div className="bg-white rounded-lg shadow border">
           {meetingsData.map((meeting, index) => (
-            <div key={index} className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+            <div 
+              key={index} 
+              className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => handleMeetingClick(meeting.name)}
+            >
               <h3 className="font-medium text-gray-800">{meeting.name}</h3>
               <p className="text-sm text-gray-500 mt-1">Статус: Запланировано</p>
               {meeting.projectId && (
@@ -523,7 +642,11 @@ const App = () => {
               </div>
               {relatedMeetings.length > 0 ? (
                 relatedMeetings.map((meeting, index) => (
-                  <div key={index} className="p-4 border-b border-gray-100 last:border-b-0">
+                  <div 
+                    key={index} 
+                    className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleMeetingClick(meeting.name)}
+                  >
                     <p className="text-gray-800">{meeting.name}</p>
                     <p className="text-sm text-gray-500 mt-1">Статус: Запланировано</p>
                   </div>
@@ -630,7 +753,11 @@ const App = () => {
               </div>
               {relatedMeetings.length > 0 ? (
                 relatedMeetings.map((meeting, index) => (
-                  <div key={index} className="p-4 border-b border-gray-100 last:border-b-0">
+                  <div 
+                    key={index} 
+                    className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleMeetingClick(meeting.name)}
+                  >
                     <p className="text-gray-800">{meeting.name}</p>
                     <p className="text-sm text-gray-500 mt-1">Статус: Запланировано</p>
                     {meeting.subprojectId && (
@@ -833,6 +960,15 @@ const App = () => {
         onSave={handleTaskSave}
         isEditing={isEditingTask}
         onEdit={handleTaskEdit}
+      />
+
+      <MeetingCard
+        meeting={selectedMeeting}
+        isOpen={showMeetingCard}
+        onClose={handleMeetingClose}
+        onSave={handleMeetingSave}
+        isEditing={isEditingMeeting}
+        onEdit={handleMeetingEdit}
       />
     </div>
   );
