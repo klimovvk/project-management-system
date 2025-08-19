@@ -1,12 +1,44 @@
 import React, { useState } from 'react';
-import { Calendar, User, Users, FolderOpen, ChevronRight, Menu, X, Plus } from 'lucide-react';
+import { Calendar, User, Users, FolderOpen, ChevronRight, Menu, X, Plus, Shield, UserCheck } from 'lucide-react';
 import TaskCard, { TaskData } from './components/TaskCard';
 import MeetingCard, { MeetingData } from './components/MeetingCard';
 import DayView from './components/DayView';
 import WeekView from './components/WeekView';
 import MonthView from './components/MonthView';
 
+type UserRole = 'admin' | 'participant';
+
+interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+}
+
 const App = () => {
+  // Система ролей пользователей
+  const [currentUser, setCurrentUser] = useState<UserProfile>({
+    id: '1',
+    name: 'Кирилл Огородов',
+    role: 'admin',
+    email: 'admin@company.com'
+  });
+  
+  const users: UserProfile[] = [
+    {
+      id: '1',
+      name: 'Кирилл Огородов',
+      role: 'admin',
+      email: 'admin@company.com'
+    },
+    {
+      id: '2', 
+      name: 'Анна Петрова',
+      role: 'participant',
+      email: 'participant@company.com'
+    }
+  ];
+
   const [currentPage, setCurrentPage] = useState('my-work');
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedProject, setSelectedProject] = useState(null);
@@ -73,6 +105,8 @@ const App = () => {
   };
 
   const handleCreateClick = (type) => {
+    // Ограничения удалены - все пользователи могут создавать проекты и совещания
+    
     setModalType(type);
     setShowModal(true);
     setShowCreateMenu(false);
@@ -348,18 +382,60 @@ const App = () => {
     </>
   );
 
+  const switchUser = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setCurrentUser(user);
+    }
+  };
+
   const TopBar = () => (
     <div className="lg:ml-64 bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center">
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="lg:hidden mr-4 text-gray-600 hover:text-gray-900"
-        >
-          <Menu size={24} />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {menuItems.find(item => item.id === currentPage)?.name}
-        </h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden mr-4 text-gray-600 hover:text-gray-900"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {menuItems.find(item => item.id === currentPage)?.name}
+          </h1>
+        </div>
+        
+        {/* Переключатель ролей */}
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-600">
+            Текущий пользователь:
+          </div>
+          <div className="relative">
+            <select 
+              value={currentUser.id}
+              onChange={(e) => switchUser(e.target.value)}
+              className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.role === 'admin' ? 'Администратор' : 'Участник'})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center space-x-2">
+            {currentUser.role === 'admin' ? (
+              <Shield size={20} className="text-red-500" />
+            ) : (
+              <UserCheck size={20} className="text-blue-500" />
+            )}
+            <div className="text-sm">
+              <div className="font-medium text-gray-900">{currentUser.name}</div>
+              <div className="text-gray-500">
+                {currentUser.role === 'admin' ? 'Администратор' : 'Участник'}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -838,6 +914,7 @@ const App = () => {
         <div className="relative">
           {showCreateMenu && (
             <div className="absolute bottom-16 right-0 bg-white rounded-lg shadow-lg border py-2 min-w-48">
+              {/* Проекты - для всех пользователей */}
               <button
                 onClick={() => handleCreateClick('project')}
                 className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
@@ -845,6 +922,8 @@ const App = () => {
                 <FolderOpen size={16} />
                 <span>Проект</span>
               </button>
+              
+              {/* Задачи - для всех пользователей */}
               <button
                 onClick={() => handleCreateClick('task')}
                 className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
@@ -852,6 +931,8 @@ const App = () => {
                 <User size={16} />
                 <span>Задачу</span>
               </button>
+              
+              {/* Совещания - для всех пользователей */}
               <button
                 onClick={() => handleCreateClick('meeting')}
                 className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
@@ -859,6 +940,11 @@ const App = () => {
                 <Users size={16} />
                 <span>Совещание</span>
               </button>
+              
+              {/* Индикатор текущей роли */}
+              <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-500">
+                Роль: {currentUser.role === 'admin' ? 'Администратор' : 'Участник'}
+              </div>
             </div>
           )}
           
@@ -969,6 +1055,8 @@ const App = () => {
         onSave={handleMeetingSave}
         isEditing={isEditingMeeting}
         onEdit={handleMeetingEdit}
+        currentUserRole={currentUser.role}
+        currentUser={currentUser}
       />
     </div>
   );

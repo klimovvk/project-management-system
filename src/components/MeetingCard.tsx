@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { X, Clock, MapPin, Users, Calendar, Bell, Plus, Trash2 } from 'lucide-react';
+import { X, Clock, MapPin, Users, Calendar, Bell, Plus, Trash2, Shield, AlertTriangle } from 'lucide-react';
+
+type UserRole = 'admin' | 'participant';
+
+interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+}
 
 export interface MeetingData {
   id: string;
@@ -34,6 +43,8 @@ interface MeetingCardProps {
   onSave: (meeting: MeetingData) => void;
   isEditing: boolean;
   onEdit: () => void;
+  currentUserRole?: UserRole;
+  currentUser?: UserProfile;
 }
 
 const MeetingCard: React.FC<MeetingCardProps> = ({
@@ -42,7 +53,9 @@ const MeetingCard: React.FC<MeetingCardProps> = ({
   onClose,
   onSave,
   isEditing,
-  onEdit
+  onEdit,
+  currentUserRole = 'participant',
+  currentUser
 }) => {
   const [formData, setFormData] = useState<MeetingData>(
     meeting || {
@@ -175,9 +188,28 @@ const MeetingCard: React.FC<MeetingCardProps> = ({
       <div className="ml-auto w-1/2 h-full bg-white shadow-lg overflow-y-auto">
         <div className="sticky top-0 bg-white p-6 border-b border-gray-200 z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              {isEditing ? 'Редактировать совещание' : 'Детали совещания'}
-            </h2>
+            <div className="flex items-center space-x-3">
+              <h2 className="text-xl font-semibold">
+                {isEditing ? 'Редактировать совещание' : 'Детали совещания'}
+              </h2>
+              <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium">
+                {currentUserRole === 'admin' ? (
+                  <>
+                    <Shield size={12} className="mr-1 text-red-500" />
+                    <span className="text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                      Администратор
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Users size={12} className="mr-1 text-blue-500" />
+                    <span className="text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                      Участник
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
             <div className="flex items-center space-x-2">
               {!isEditing && (
                 <button
@@ -215,8 +247,11 @@ const MeetingCard: React.FC<MeetingCardProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
               Тип совещания
+              {currentUserRole === 'admin' && formData.type === 'Стратегическое' && (
+                <Shield size={16} className="ml-2 text-red-500" title="Только для администраторов" />
+              )}
             </label>
             {isEditing ? (
               <select
@@ -229,7 +264,12 @@ const MeetingCard: React.FC<MeetingCardProps> = ({
                 ))}
               </select>
             ) : (
-              <p className="text-gray-900">{formData.type}</p>
+              <div className="flex items-center">
+                <p className="text-gray-900">{formData.type}</p>
+                {formData.type === 'Стратегическое' && (
+                  <Shield size={16} className="ml-2 text-red-500" title="Только для администраторов" />
+                )}
+              </div>
             )}
           </div>
 
