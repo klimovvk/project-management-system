@@ -13,7 +13,18 @@ from pathlib import Path
 def log_session_event(input_data, event_type):
     """Логирует событие сессии в файл"""
     
-    project_dir = os.environ.get('CLAUDE_PROJECT_DIR', os.getcwd())
+    # Определяем директорию проекта с учетом кросс-платформенности
+    project_dir = os.environ.get('CLAUDE_PROJECT_DIR')
+    if not project_dir:
+        # Если переменная не задана, ищем .claude в текущей директории или родительских
+        current_dir = Path.cwd()
+        for parent in [current_dir] + list(current_dir.parents):
+            if (parent / '.claude').exists():
+                project_dir = str(parent)
+                break
+        else:
+            project_dir = os.getcwd()
+    
     logs_dir = Path(project_dir) / '.claude' / 'logs'
     logs_dir.mkdir(parents=True, exist_ok=True)
     
@@ -50,6 +61,13 @@ def main():
     """Основная функция хука"""
     
     try:
+        # Настраиваем кодировку для Windows
+        if sys.platform == 'win32':
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+            sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+        
         # Читаем входные данные
         input_data = json.load(sys.stdin)
         
